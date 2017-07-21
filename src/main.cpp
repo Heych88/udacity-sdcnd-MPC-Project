@@ -17,6 +17,11 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+void resetSimulator(uWS::WebSocket<uWS::SERVER>& ws) {
+    std::string msg("42[\"reset\", {}]");
+    ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+}
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -91,15 +96,32 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-
+          
+          // convert the trajectory coordinates from world frame into car frame
+          // world frame angle (psi) is the inverse of car frame angle
+          for(int i=0; i < ptsx.size(); i++) {
+            double transpose_x = ptsx[i] - px;
+            double transpose_y = ptsy[i] - py;
+            ptsx[i] = transpose_x * cos(0 - psi) - transpose_y * sin(0 - psi);
+            ptsy[i] = transpose_x * sin(0 - psi) + transpose_y * cos(0 - psi);
+          }
+          // convert the points std::vector to an Eigen::VectorXd
+          double *ptrx = &ptsx[0]; // get the address of the points x vector
+          double *ptry = &ptsy[0];
+          Eigen::Map<Eigen::VectorXd> pathx(ptrx, ptsx.size());
+          Eigen::Map<Eigen::VectorXd> pathy(ptry, ptsy.size());
+          
+          // fit a third order polynomial to the car framed trajectory points
+          auto poly = polyfit(pathx, pathy, 3);
+          //std::cout<<"ptsx "<<ptsx.size()<<"  ptsy "<<ptsy.size()<<"  px "<<px<<"   py "<<py<<"    psi "<<psi<<"   v "<<v<<std::endl;
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          double steer_value;
-          double throttle_value;
+          double steer_value= -0.03;
+          double throttle_value = 0.05;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -113,6 +135,8 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
+          //mpc_x_vals = ptsx;
+          //mpc_y_vals = ptsy;
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
@@ -123,7 +147,12 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
-
+          double delta_x = 3;
+          int num_pts = 20;
+          for(int i=0; i < num_pts; i++) {
+            next_x_vals.push_back(i*delta_x);
+            next_y_vals.push_back(polyeval(poly, i*delta_x));
+          }
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
