@@ -18,8 +18,9 @@ double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
 void resetSimulator(uWS::WebSocket<uWS::SERVER>& ws) {
-    std::string msg("42[\"reset\", {}]");
-    ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+  std::cout<<"RESET SIMULATOR"<<std::endl;
+  std::string msg("42[\"reset\", {}]");
+  ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 }
 
 // Checks if the SocketIO event has JSON data.
@@ -113,15 +114,25 @@ int main() {
           
           // fit a third order polynomial to the car framed trajectory points
           auto poly = polyfit(pathx, pathy, 3);
-          //std::cout<<"ptsx "<<ptsx.size()<<"  ptsy "<<ptsy.size()<<"  px "<<px<<"   py "<<py<<"    psi "<<psi<<"   v "<<v<<std::endl;
+          double cte = polyeval(poly, 0); // cross track error
+          // steer angle error epsi = psi - psi_desired => psi - arctan(f'(x))
+          double epsi = -atan(poly[1]); //poly[1]
+          
+          // create the state vector
+          Eigen::VectorXd state (6);
+          state << 0, 0, 0, v, cte, epsi;
+          
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
+          auto controls = mpc.Solve(state, poly);
+          //std::cout<<"cte "<<fabs(cte)<<"   epsi "<<epsi<<std::endl;
           double steer_value= -0.03;
           double throttle_value = 0.05;
+          
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.

@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 0;
-double dt = 0;
+size_t N = 20;
+double dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -52,9 +52,9 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // element vector and there are 10 timesteps. The number of variables is:
   //
   // 4 * 10 + 2 * 9
-  size_t n_vars = 0;
+  size_t n_vars = 6 * N + 2 * (N-1);
   // TODO: Set the number of constraints
-  size_t n_constraints = 0;
+  size_t n_constraints = N * 6;
 
   // Initial value of the independent variables.
   // SHOULD BE 0 besides initial state.
@@ -62,18 +62,37 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   for (int i = 0; i < n_vars; i++) {
     vars[i] = 0;
   }
-
+  
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
   // TODO: Set lower and upper limits for variables.
-
-  // Lower and upper limits for the constraints
+  size_t x_start = 0;
+  size_t y_start = x_start + N;
+  size_t psi_start = y_start + N;
+  size_t v_start = psi_start + N;
+  size_t cte_start = v_start + N;
+  size_t epsi_start = cte_start + N;
+  size_t steer_angle_start = epsi_start + N;
+  size_t throttle_start = steer_angle_start + (N - 1);
+  // Lower and upper limits for the constraints and variables
   // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
   for (int i = 0; i < n_constraints; i++) {
+    vars_lowerbound[x_start + i] = -0.0001;
+    vars_upperbound[x_start + i] = 0.0001;
+    
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
+  }
+  // Lower and upper limits for the control variables
+  for(int i=0; i < (N-1); i++) {
+    // control steering angle limits
+    vars_lowerbound[steer_angle_start + i] = -25.0;
+    vars_upperbound[steer_angle_start + i] = 25.0;
+    // control throttle limits
+    vars_lowerbound[throttle_start + i] = -1.0;
+    vars_upperbound[throttle_start + i] = 1.0;
   }
 
   // object that computes objective and constraints
