@@ -116,7 +116,10 @@ int main() {
           auto poly = polyfit(pathx, pathy, 3);
           double cte = polyeval(poly, 0); // cross track error
           // steer angle error epsi = psi - psi_desired => psi - arctan(f'(x))
-          double epsi = -atan(poly[1]); //poly[1]
+          double epsi = atan(poly[1]); //poly[1]
+          
+          double steer_value = j[1]["steering_angle"];
+          double throttle_value = j[1]["throttle"];
           
           // create the state vector
           Eigen::VectorXd state (6);
@@ -129,16 +132,21 @@ int main() {
           *
           */
           auto controls = mpc.Solve(state, poly);
-          //std::cout<<"cte "<<fabs(cte)<<"   epsi "<<epsi<<std::endl;
-          double steer_value= -0.03;
-          double throttle_value = 0.05;
           
+          //std::vector<double> steer_angles = {};
+          //std::vector<double> throttle_speeds = {};
+          //steer_angles.push_back(controls[6]);
+          //throttle_speeds.push_back(controls[7]);
+          
+          //std::cout<<"cte "<<controls[6]<<"   epsi "<<controls[7]<<std::endl;
+          
+          const double Lf = 2.67;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = throttle_value;
+          msgJson["steering_angle"] = -controls[0]/(deg2rad(25)*Lf);//steer_value;
+          msgJson["throttle"] = controls[1]; //throttle_value;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
@@ -146,9 +154,16 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
+          for(int i=2; i < controls.size(); i++){
+            if(i%2 == 0){
+              mpc_x_vals.push_back(controls[i]);
+            } else {
+              mpc_y_vals.push_back(controls[i]);
+            }
+          }
           //mpc_x_vals = ptsx;
-          //mpc_y_vals = ptsy;
-
+          //mpc_y_vals = ptsx;
+          
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
@@ -166,7 +181,6 @@ int main() {
           }
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
-
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
