@@ -120,8 +120,24 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value= -0.03;
-          double throttle_value = 0.05;
+          double target_psi = 0;
+          double target_x = 0;
+          double target_y = 0;
+          
+          double cte = polyeval(poly, target_x) - target_y;
+          // TODO: calculate the orientation error
+          double epsi = target_psi - atan(poly[1] + 2 * poly[2] * target_x + 3 * poly[3] * target_x * target_x);
+  
+          Eigen::VectorXd state(6);
+          state << target_x, target_y, target_psi, v, cte, epsi;
+          
+          vector<double> control;
+          vector<double> path_x;
+          vector<double> path_y;
+          std::tie(control, path_x, path_y) = mpc.Solve(state, poly);
+          
+          double steer_value= -control[0];
+          double throttle_value = control[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
@@ -135,8 +151,8 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
-          //mpc_x_vals = ptsx;
-          //mpc_y_vals = ptsy;
+          mpc_x_vals = path_x;
+          mpc_y_vals = path_y;
 
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
