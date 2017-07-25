@@ -22,6 +22,14 @@ size_t epsi_start = cte_start + N;
 size_t delta_start = epsi_start + N;
 size_t a_start = delta_start + N - 1;
 
+double cte_penalty = 1000; // penalty for not having a low cross track error
+double epsi_penalty = 1000; // for having an angle error
+double speed_penalty = 1; // not following the speed limit
+double steer_use_penalty = 1; // for steering the car
+double a_use_penalty = 1; // using the throttle
+double steer_change_penalty = 1; // having sharp / large steer angles between steps
+double a_change_penalty = 1; // accelerating or braking fast
+
 // This value assumes the model presented in the classroom is used.
 //
 // It was obtained by measuring the radius formed by running the vehicle in the
@@ -49,19 +57,19 @@ class FG_eval {
     fg[0] = 0;
     
     for(int i=0; i < N; i++) {
-      fg[0] += 1000 * CppAD::pow(vars[cte_start + i], 2);
-      fg[0] += 1000 * CppAD::pow(vars[epsi_start + i], 2);
-      fg[0] += CppAD::pow(vars[v_start + i] - ref_v, 2);
+      fg[0] += cte_penalty * CppAD::pow(vars[cte_start + i], 2);
+      fg[0] += epsi_penalty * CppAD::pow(vars[epsi_start + i], 2);
+      fg[0] += speed_penalty * CppAD::pow(vars[v_start + i] - ref_v, 2);
     }
     
     for(int i=0; i < N-1; i++) {
-      fg[0] += 10*CppAD::pow(vars[delta_start + i], 2);
-      fg[0] += CppAD::pow(vars[a_start + i], 2);
+      fg[0] += steer_use_penalty * CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += a_use_penalty * CppAD::pow(vars[a_start + i], 2);
     }
     
     for(int i=0; i < N-2; i++) {
-      fg[0] += 10 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-      fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+      fg[0] += steer_change_penalty * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += a_change_penalty * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
     
     // Initial constraints
