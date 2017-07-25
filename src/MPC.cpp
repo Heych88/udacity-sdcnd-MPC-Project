@@ -6,9 +6,9 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 12;
+size_t N = 10;
 double dt = 0.1;
-double ref_v = 40;
+double ref_v = 60;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -49,19 +49,19 @@ class FG_eval {
     fg[0] = 0;
     
     for(int i=0; i < N; i++) {
-      fg[0] += CppAD::pow(vars[cte_start + i], 2);
-      fg[0] += CppAD::pow(vars[epsi_start + i], 2);
+      fg[0] += 1000 * CppAD::pow(vars[cte_start + i], 2);
+      fg[0] += 1000 * CppAD::pow(vars[epsi_start + i], 2);
       fg[0] += CppAD::pow(vars[v_start + i] - ref_v, 2);
     }
     
     for(int i=0; i < N-1; i++) {
-      fg[0] += CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += 10*CppAD::pow(vars[delta_start + i], 2);
       fg[0] += CppAD::pow(vars[a_start + i], 2);
     }
     
     for(int i=0; i < N-2; i++) {
       fg[0] += 10 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-      fg[0] += 20 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+      fg[0] += CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
     
     // Initial constraints
@@ -154,8 +154,8 @@ std::tuple<vector<double>, vector<double>, vector<double>> MPC::Solve(Eigen::Vec
   
   for (int i = 0; i < (N - 1); i++) {
     // steer angle limitation
-    vars_lowerbound[delta_start + i] = -25 * M_PI / 180;
-    vars_upperbound[delta_start + i] = 25 * M_PI / 180;
+    vars_lowerbound[delta_start + i] = -25 * M_PI * Lf / 180;
+    vars_upperbound[delta_start + i] = 25 * M_PI * Lf / 180;
     // throttle limitation
     vars_lowerbound[a_start + i] = -1.0;
     vars_upperbound[a_start + i] = 1.0;
@@ -233,7 +233,7 @@ std::tuple<vector<double>, vector<double>, vector<double>> MPC::Solve(Eigen::Vec
   vector<double> control = {solution.x[delta_start], solution.x[a_start]};
   vector<double> path_x;
   vector<double> path_y;
-  for (int i=0; i < N; i++) {
+  for (int i=1; i < N; i++) {
     path_x.push_back(solution.x[x_start + i]);
     path_y.push_back(solution.x[y_start + i]);
   }
