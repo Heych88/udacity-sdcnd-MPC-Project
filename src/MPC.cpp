@@ -6,9 +6,9 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
-double dt = 0.1;
-double ref_v = 60;
+size_t N = 8;
+double dt = 0.15;
+double ref_v = 100;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -25,10 +25,10 @@ size_t a_start = delta_start + N - 1;
 double cte_penalty = 1000; // penalty for not having a low cross track error
 double epsi_penalty = 1000; // for having an angle error
 double speed_penalty = 1; // not following the speed limit
-double steer_use_penalty = 1; // for steering the car
-double a_use_penalty = 1; // using the throttle
-double steer_change_penalty = 1; // having sharp / large steer angles between steps
-double a_change_penalty = 1; // accelerating or braking fast
+double steer_use_penalty = 20; // for steering the car
+double a_use_penalty = 20; // using the throttle
+double steer_change_penalty = 10; // having sharp / large steer angles between steps
+double a_change_penalty = 10; // accelerating or braking fast
 
 // This value assumes the model presented in the classroom is used.
 //
