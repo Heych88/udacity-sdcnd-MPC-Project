@@ -75,7 +75,7 @@ int main() {
 
   // MPC is initialized here!
   MPC mpc;
-
+  
   h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -127,7 +127,7 @@ int main() {
           double cte = polyeval(poly, target_x) - target_y;
           // TODO: calculate the orientation error
           double epsi = target_psi - atan(poly[1] + 2 * poly[2] * target_x + 3 * poly[3] * target_x * target_x);
-  
+          
           Eigen::VectorXd state(6);
           state << target_x, target_y, target_psi, v, cte, epsi;
           
@@ -164,7 +164,7 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
           double delta_x = 3;
-          int num_pts = 20;
+          int num_pts = 36;
           for(int i=0; i < num_pts; i++) {
             next_x_vals.push_back(i*delta_x);
             next_y_vals.push_back(polyeval(poly, i*delta_x));
