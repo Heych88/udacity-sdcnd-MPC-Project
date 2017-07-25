@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 8;
-double dt = 0.15;
+size_t N = 10;
+double dt = 0.115;
 double ref_v = 100;
 
 // The solver takes all the state variables and actuator
@@ -22,13 +22,13 @@ size_t epsi_start = cte_start + N;
 size_t delta_start = epsi_start + N;
 size_t a_start = delta_start + N - 1;
 
-double cte_penalty = 1000; // penalty for not having a low cross track error
-double epsi_penalty = 1000; // for having an angle error
-double speed_penalty = 1; // not following the speed limit
+double cte_penalty = 4500; // penalty for not having a low cross track error
+double epsi_penalty = 8000; // for having an angle error
+double speed_penalty = 3.25; // not following the speed limit
 double steer_use_penalty = 20; // for steering the car
-double a_use_penalty = 20; // using the throttle
-double steer_change_penalty = 10; // having sharp / large steer angles between steps
-double a_change_penalty = 10; // accelerating or braking fast
+double a_use_penalty = 1; // using the throttle
+double steer_change_penalty = 50; // having sharp / large steer angles between steps
+double a_change_penalty = 1; // accelerating or braking fast
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -118,8 +118,8 @@ class FG_eval {
       fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
       fg[2 + psi_start + i] = psi1 - (psi0 + v0 / Lf * delta0 * dt);
       fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
-      fg[2 + cte_start + i] = cte1 - (fx0 - y0 + (v0 * CppAD::sin(epsi0) * dt));
-      fg[2 + epsi_start + i] = epsi1 - (psi0 - psi_des + (v0 / Lf * delta0 * dt));
+      fg[2 + cte_start + i] = cte1 - ((fx0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+      fg[2 + epsi_start + i] = epsi1 - ((psi0 - psi_des) + (v0 / Lf * delta0 * dt));
     }
     
   }
@@ -162,8 +162,8 @@ std::tuple<vector<double>, vector<double>, vector<double>> MPC::Solve(Eigen::Vec
   
   for (int i = 0; i < (N - 1); i++) {
     // steer angle limitation
-    vars_lowerbound[delta_start + i] = -25 * M_PI * Lf / 180;
-    vars_upperbound[delta_start + i] = 25 * M_PI * Lf / 180;
+    vars_lowerbound[delta_start + i] = -(25 * M_PI / 180) * Lf;
+    vars_upperbound[delta_start + i] = (25 * M_PI / 180) * Lf;
     // throttle limitation
     vars_lowerbound[a_start + i] = -1.0;
     vars_upperbound[a_start + i] = 1.0;
@@ -241,7 +241,7 @@ std::tuple<vector<double>, vector<double>, vector<double>> MPC::Solve(Eigen::Vec
   vector<double> control = {solution.x[delta_start], solution.x[a_start]};
   vector<double> path_x;
   vector<double> path_y;
-  for (int i=1; i < N; i++) {
+  for (int i=1; i < N-1; i++) {
     path_x.push_back(solution.x[x_start + i]);
     path_y.push_back(solution.x[y_start + i]);
   }
