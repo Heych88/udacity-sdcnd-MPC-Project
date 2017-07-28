@@ -7,16 +7,28 @@ using CppAD::AD;
 
 // TODO: Set the timestep length and duration
 size_t N = 10;
-double dt = 0.1; // change in time in seconds
+double dt = 0.12;
+double ref_v = 100;
 
+// The solver takes all the state variables and actuator
+// variables in a singular vector. Thus, we should to establish
+// when one variable starts and another ends to make our lifes easier.
 size_t x_start = 0;
 size_t y_start = x_start + N;
 size_t psi_start = y_start + N;
 size_t v_start = psi_start + N;
 size_t cte_start = v_start + N;
 size_t epsi_start = cte_start + N;
-size_t steer_angle_start = epsi_start + N;
-size_t throttle_start = steer_angle_start + (N - 1);
+size_t delta_start = epsi_start + N;
+size_t a_start = delta_start + N - 1;
+
+double cte_penalty = 4500; // penalty for not having a low cross track error
+double epsi_penalty = 8000; // for having an angle error
+double speed_penalty = 3.25; // not following the speed limit
+double steer_use_penalty = 200; // for steering the car
+double a_use_penalty = 1; // using the throttle
+double steer_change_penalty = 50; // having sharp / large steer angles between steps
+double a_change_penalty = 1; // accelerating or braking fast
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -43,28 +55,32 @@ class FG_eval {
     // NOTE: You'll probably go back and forth between this function and
     // the Solver function below.
     fg[0] = 0;
-
-    double target_vel = 30; //target car velocity
-    // cost based of the reference states
+    
+    // penalise the system for deviating of the planned path and for not 
+    // traveling at the intended speed 
     for(int i=0; i < N; i++) {
-      fg[0] += 2000*CppAD::pow(vars[cte_start + i], 2);
-      fg[0] += 2000*CppAD::pow(vars[epsi_start + i], 2);
-      fg[0] += CppAD::pow(vars[v_start + i] - target_vel, 2);
-    }
-
-    // minimise the use of the controls
-    for(int i=0; i < (N-1); i++) {
-      fg[0] += 5*CppAD::pow(vars[steer_angle_start + i], 2);
-      fg[0] += 5*CppAD::pow(vars[throttle_start + i], 2);
+      fg[0] += cte_penalty * CppAD::pow(vars[cte_start + i], 2);
+      fg[0] += epsi_penalty * CppAD::pow(vars[epsi_start + i], 2);
+      fg[0] += speed_penalty * CppAD::pow(vars[v_start + i] - ref_v, 2);
     }
     
-    // minimise the rate of change in the controls
-    for(int i=0; i < (N-2); i++) {
-      fg[0] += 200*CppAD::pow(vars[steer_angle_start+i+1] - vars[steer_angle_start+i], 2);
-      fg[0] += 10*CppAD::pow(vars[throttle_start+i+1] - vars[throttle_start+i], 2);
+    // limit the use of steering and accelerating
+    for(int i=0; i < N-1; i++) {
+      fg[0] += steer_use_penalty * CppAD::pow(vars[delta_start + i], 2);
+      fg[0] += a_use_penalty * CppAD::pow(vars[a_start + i], 2);
     }
-
-    // initial constraints
+    
+    // limit the change between time steps on the acceleration and steering angles
+    for(int i=0; i < N-2; i++) {
+      fg[0] += steer_change_penalty * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+      fg[0] += a_change_penalty * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+    }
+    
+    // Initial constraints
+    //
+    // We add 1 to each of the starting indices due to cost being located at
+    // index 0 of `fg`.
+    // This bumps up the position of all the other values.
     fg[1 + x_start] = vars[x_start];
     fg[1 + y_start] = vars[y_start];
     fg[1 + psi_start] = vars[psi_start];
@@ -72,44 +88,42 @@ class FG_eval {
     fg[1 + cte_start] = vars[cte_start];
     fg[1 + epsi_start] = vars[epsi_start];
 
-    for(int i=0; i < N-1; i++) {
-      // next time step t+1
-      AD<double> x1 = vars[x_start + i+1];
-      AD<double> y1 = vars[y_start + i+1];
-      AD<double> psi1 = vars[psi_start + i+1];
-      AD<double> v1 = vars[v_start + i+1];
-      AD<double> cte1 = vars[cte_start + i+1];
-      AD<double> epsi1 = vars[epsi_start + i+1];
-      // current time step t-1
+    // The rest of the constraints
+    for (int i=0; i < N - 1; i++) {
+      AD<double> x1 = vars[x_start + i + 1];
+      AD<double> y1 = vars[y_start + i + 1];
+      AD<double> psi1 = vars[psi_start + i + 1];
+      AD<double> v1 = vars[v_start + i + 1];
+      AD<double> cte1 = vars[cte_start + i + 1];
+      AD<double> epsi1 = vars[epsi_start + i + 1];
+      //AD<double> delta1 = vars[delta_start + i + 1];
+      //AD<double> a1 = vars[a_start + i + 1];
+
       AD<double> x0 = vars[x_start + i];
       AD<double> y0 = vars[y_start + i];
       AD<double> psi0 = vars[psi_start + i];
       AD<double> v0 = vars[v_start + i];
-      AD<double> cte0 = vars[cte_start + i];
+      //AD<double> cte0 = vars[cte_start + i];
       AD<double> epsi0 = vars[epsi_start + i];
-      
-      AD<double> steer_angle0 = vars[steer_angle_start + i];
-      AD<double> throttle0 = vars[throttle_start + i]; // acceleration
+      AD<double> delta0 = vars[delta_start + i];
+      AD<double> a0 = vars[a_start + i];
 
-      // vehicle motion model function f = v + a*x
-      AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
-      AD<double> psi_target = CppAD::atan(coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0);
-      
       // Here's `x` to get you started.
       // The idea here is to constraint this value to be 0.
       //
       // NOTE: The use of `AD<double>` and use of `CppAD`!
       // This is also CppAD can compute derivatives and pass
       // these to the solver.
- 
-      //std::cout<<"operator() 6"<<std::endl;
+      AD<double> fx0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * x0 * x0 + coeffs[3] * x0 * x0 * x0;
+      AD<double> psi_des = coeffs[1] + 2 * coeffs[2] * x0 + 3 * coeffs[3] * x0 * x0;
+
       // TODO: Setup the rest of the model constraints
       fg[2 + x_start + i] = x1 - (x0 + v0 * CppAD::cos(psi0) * dt);
       fg[2 + y_start + i] = y1 - (y0 + v0 * CppAD::sin(psi0) * dt);
-      fg[2 + psi_start + i] = psi1 - (psi0 + v0 / Lf * steer_angle0 * dt);
-      fg[2 + v_start + i] = v1 - (v0 + throttle0 * dt);
-      fg[2 + cte_start + i] = cte1 - (f0 - y0 + (v0 * CppAD::sin(epsi0) * dt));
-      fg[2 + epsi_start + i] = epsi1 - ((psi0 - psi_target) + (v0 / Lf * steer_angle0 * dt));
+      fg[2 + psi_start + i] = psi1 - (psi0 + v0 / Lf * delta0 * dt);
+      fg[2 + v_start + i] = v1 - (v0 + a0 * dt);
+      fg[2 + cte_start + i] = cte1 - ((fx0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+      fg[2 + epsi_start + i] = epsi1 - ((psi0 - psi_des) + (v0 / Lf * delta0 * dt));
     }
     
   }
@@ -121,7 +135,7 @@ class FG_eval {
 MPC::MPC() {}
 MPC::~MPC() {}
 
-vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
+std::tuple<vector<double>, vector<double>, vector<double>> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   bool ok = true;
   size_t i;
   typedef CPPAD_TESTVECTOR(double) Dvector;
@@ -131,7 +145,7 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // element vector and there are 10 timesteps. The number of variables is:
   //
   // 4 * 10 + 2 * 9
-  size_t n_vars = 6 * N + 2 * (N-1);
+  size_t n_vars = N * 6 + (N - 1) * 2;
   // TODO: Set the number of constraints
   size_t n_constraints = N * 6;
 
@@ -142,53 +156,51 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
     vars[i] = 0;
   }
 
-  
-  // TODO: Set lower and upper limits for variables.
-  // Lower and upper limits for the constraints and variables
-  // Should be 0 besides initial constraints state.
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
+  // TODO: Set lower and upper limits for variables.
+  for (int i = 0; i < delta_start; i++) {
+    vars_lowerbound[i] = -1.0e19;
+    vars_upperbound[i] = 1.0e19;
+  }
+  
+  for (int i = 0; i < (N - 1); i++) {
+    // steer angle limitation
+    vars_lowerbound[delta_start + i] = -(25 * M_PI / 180) * Lf;
+    vars_upperbound[delta_start + i] = (25 * M_PI / 180) * Lf;
+    // throttle limitation
+    vars_lowerbound[a_start + i] = -1.0;
+    vars_upperbound[a_start + i] = 1.0;
+  }
+  // Lower and upper limits for the constraints
+  // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
   for (int i = 0; i < n_constraints; i++) {
-    vars_lowerbound[x_start + i] = -1.0e19;
-    vars_upperbound[x_start + i] = 1.0e19;
-    
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
   }
-  // Lower and upper limits for the control variables
-  for(int i=0; i < (N-1); i++) {
-    // control steering angle limits
-    vars_lowerbound[steer_angle_start + i] = -25;//0.436332 * Lf;
-    vars_upperbound[steer_angle_start + i] = 25;//0.436332 * Lf;
-    // control throttle limits
-    vars_lowerbound[throttle_start + i] = -1.0;
-    vars_upperbound[throttle_start + i] = 1.0;
-  }
+  double x = state[0];
+  double y = state[1];
+  double psi = state[2];
+  double v = state[3];
+  double cte = state[4];
+  double epsi = state[5];
   
-  constraints_lowerbound[x_start] = state[0];   // x0
-  constraints_lowerbound[y_start] = state[1];   // y0
-  constraints_lowerbound[psi_start] = state[2]; // psi0 
-  constraints_lowerbound[v_start] = state[3];   // v0
-  constraints_lowerbound[cte_start] = state[4]; // cte0
-  constraints_lowerbound[epsi_start] = state[5];// epsi0 
+  constraints_lowerbound[x_start] = x;
+  constraints_lowerbound[y_start] = y;
+  constraints_lowerbound[psi_start] = psi;
+  constraints_lowerbound[v_start] = v;
+  constraints_lowerbound[cte_start] = cte;
+  constraints_lowerbound[epsi_start] = epsi;
 
-  constraints_upperbound[x_start] = state[0];   // x0
-  constraints_upperbound[y_start] = state[1];   // y0
-  constraints_upperbound[psi_start] = state[2]; // psi0 
-  constraints_upperbound[v_start] = state[3];   // v0
-  constraints_upperbound[cte_start] = state[4]; // cte0
-  constraints_upperbound[epsi_start] = state[5];// epsi0 
+  constraints_upperbound[x_start] = x;
+  constraints_upperbound[y_start] = y;
+  constraints_upperbound[psi_start] = psi;
+  constraints_upperbound[v_start] = v;
+  constraints_upperbound[cte_start] = cte;
+  constraints_upperbound[epsi_start] = epsi;
 
-  // Set the initial variable values
-  //vars[x_start] = state[0];   // x0
-  //vars[y_start] = state[1];   // y0
-  //vars[psi_start] = state[2]; // psi0 
-  //vars[v_start] = state[3];   // v0
-  //vars[cte_start] = state[4]; // cte0
-  //vars[epsi_start] = state[5];// epsi0 
-  
   // object that computes objective and constraints
   FG_eval fg_eval(coeffs);
 
@@ -230,16 +242,13 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   //
   // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
   // creates a 2 element double vector.
-  vector<double> result;
-  result.push_back(solution.x[steer_angle_start]);
-  result.push_back(solution.x[throttle_start]);
-  for(int i=1; i < N; i++) {
-    //std::cout<<"Solve() 8, "<<i<<std::endl;
-    result.push_back(solution.x[x_start + i]);
-    result.push_back(solution.x[y_start + i]);
+  vector<double> control = {solution.x[delta_start], solution.x[a_start]};
+  vector<double> path_x;
+  vector<double> path_y;
+  for (int i=1; i < N-1; i++) {
+    path_x.push_back(solution.x[x_start + i]);
+    path_y.push_back(solution.x[y_start + i]);
   }
-  
-  return result;//{solution.x[x_start + 1], solution.x[y_start + 1], solution.x[psi_start + 1],
-      //solution.x[v_start + 1], solution.x[cte_start + 1], solution.x[epsi_start + 1],
-      //solution.x[steer_angle_start + 1], solution.x[throttle_start + 1]};
+
+  return std::make_tuple(control, path_x, path_y);
 }

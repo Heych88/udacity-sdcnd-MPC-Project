@@ -18,9 +18,8 @@ double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
 void resetSimulator(uWS::WebSocket<uWS::SERVER>& ws) {
-  std::cout<<"RESET SIMULATOR"<<std::endl;
-  std::string msg("42[\"reset\", {}]");
-  ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
+    std::string msg("42[\"reset\", {}]");
+    ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 }
 
 // Checks if the SocketIO event has JSON data.
@@ -76,7 +75,7 @@ int main() {
 
   // MPC is initialized here!
   MPC mpc;
-
+  
   h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -114,39 +113,36 @@ int main() {
           
           // fit a third order polynomial to the car framed trajectory points
           auto poly = polyfit(pathx, pathy, 3);
-          double cte = polyeval(poly, 0); // cross track error
-          // steer angle error epsi = psi - psi_desired => psi - arctan(f'(x))
-          double epsi = atan(poly[1]); //poly[1]
-          
-          double steer_value = j[1]["steering_angle"];
-          double throttle_value = j[1]["throttle"];
-          
-          // create the state vector
-          Eigen::VectorXd state (6);
-          state << 0, 0, 0, v, cte, epsi;
-          
           /*
           * TODO: Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
           */
-          auto controls = mpc.Solve(state, poly);
+          double target_psi = 0;
+          double target_x = 0;
+          double target_y = 0;
           
-          //std::vector<double> steer_angles = {};
-          //std::vector<double> throttle_speeds = {};
-          //steer_angles.push_back(controls[6]);
-          //throttle_speeds.push_back(controls[7]);
+          double cte = polyeval(poly, target_x) - target_y;
+          // TODO: calculate the orientation error
+          double epsi = target_psi - atan(poly[1] + 2 * poly[2] * target_x + 3 * poly[3] * target_x * target_x);
           
-          //std::cout<<"cte "<<controls[6]<<"   epsi "<<controls[7]<<std::endl;
+          Eigen::VectorXd state(6);
+          state << target_x, target_y, target_psi, v, cte, epsi;
           
-          const double Lf = 2.67;
+          vector<double> control;
+          vector<double> path_x;
+          vector<double> path_y;
+          std::tie(control, path_x, path_y) = mpc.Solve(state, poly);
+          
+          double steer_value= -control[0]; // steering is opposite in simulator control
+          double throttle_value = control[1];
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = -controls[0]/(deg2rad(25)*Lf);//steer_value;
-          msgJson["throttle"] = controls[1]; //throttle_value;
+          msgJson["steering_angle"] = steer_value;
+          msgJson["throttle"] = throttle_value;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
@@ -154,16 +150,9 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
-          for(int i=2; i < controls.size(); i++){
-            if(i%2 == 0){
-              mpc_x_vals.push_back(controls[i]);
-            } else {
-              mpc_y_vals.push_back(controls[i]);
-            }
-          }
-          //mpc_x_vals = ptsx;
-          //mpc_y_vals = ptsx;
-          
+          mpc_x_vals = path_x;
+          mpc_y_vals = path_y;
+
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
 
@@ -174,7 +163,7 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
           double delta_x = 3;
-          int num_pts = 20;
+          int num_pts = 36;
           for(int i=0; i < num_pts; i++) {
             next_x_vals.push_back(i*delta_x);
             next_y_vals.push_back(polyeval(poly, i*delta_x));
