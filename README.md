@@ -1,5 +1,4 @@
-# CarND-Controls-PID
-This code utilize a MPC controller to steer and control the velocity of a vehicle about a give path trajectory.
+This code utilize a Model Predictive Controller (MPC) to steer and regulate the velocity of a vehicle about a give path trajectory.
 
 This project involves the Udacity Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases/tag/v1.0)
 
