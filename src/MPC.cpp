@@ -6,9 +6,9 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
-double dt = 0.12;
-double ref_v = 100;
+size_t N = 10;      // number of predicted timesteps in the future
+double dt = 0.12;   // system timestep
+double ref_v = 100; // desired vehicle velocity
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
@@ -52,8 +52,7 @@ class FG_eval {
   void operator()(ADvector& fg, const ADvector& vars) {
     // TODO: implement MPC
     // `fg` a vector of the cost constraints, `vars` is a vector of variable values (state & actuators)
-    // NOTE: You'll probably go back and forth between this function and
-    // the Solver function below.
+    // NOTE: The below function code is modified from the Udacity MPC quiz  
     fg[0] = 0;
     
     // penalise the system for deviating of the planned path and for not 
@@ -70,17 +69,15 @@ class FG_eval {
       fg[0] += a_use_penalty * CppAD::pow(vars[a_start + i], 2);
     }
     
-    // limit the change between time steps on the acceleration and steering angles
+    // limit the change between timesteps of the acceleration and steering angles
     for(int i=0; i < N-2; i++) {
       fg[0] += steer_change_penalty * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
       fg[0] += a_change_penalty * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
     }
     
     // Initial constraints
-    //
     // We add 1 to each of the starting indices due to cost being located at
     // index 0 of `fg`.
-    // This bumps up the position of all the other values.
     fg[1 + x_start] = vars[x_start];
     fg[1 + y_start] = vars[y_start];
     fg[1 + psi_start] = vars[psi_start];
@@ -88,8 +85,9 @@ class FG_eval {
     fg[1 + cte_start] = vars[cte_start];
     fg[1 + epsi_start] = vars[epsi_start];
 
-    // The rest of the constraints
+    // Update the system constrains using the systems model
     for (int i=0; i < N - 1; i++) {
+      // get the future timestep values => t+1
       AD<double> x1 = vars[x_start + i + 1];
       AD<double> y1 = vars[y_start + i + 1];
       AD<double> psi1 = vars[psi_start + i + 1];
@@ -99,6 +97,7 @@ class FG_eval {
       //AD<double> delta1 = vars[delta_start + i + 1];
       //AD<double> a1 = vars[a_start + i + 1];
 
+      // get the current timestep values => t
       AD<double> x0 = vars[x_start + i];
       AD<double> y0 = vars[y_start + i];
       AD<double> psi0 = vars[psi_start + i];
@@ -125,7 +124,6 @@ class FG_eval {
       fg[2 + cte_start + i] = cte1 - ((fx0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
       fg[2 + epsi_start + i] = epsi1 - ((psi0 - psi_des) + (v0 / Lf * delta0 * dt));
     }
-    
   }
 };
 
