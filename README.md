@@ -1,4 +1,4 @@
-This code utilize a Model Predictive Controller (MPC) to steer and regulate the velocity of a vehicle about a give path trajectory.
+This code utilize a Model Predictive Controller (MPC) to steer and regulate the velocity of a vehicle about a give path trajectory. A video of the filter in action can be found [here](https://youtu.be/t5-I2tkAX5E).
 
 This project involves the Udacity Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases/tag/v1.0)
 
