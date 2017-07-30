@@ -54,13 +54,22 @@ For Mac
 sh install-mac.sh
 `
 
-3. ./mpc
-
-
 If the above fails, install intall [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) seperatly, then build and ran by doing the following from the project top directory.
 
 1. mkdir build
 2. cd build
 3. cmake ..
 4. make
-5. ./mpc
+
+## Running in the Simulator
+
+The following assumes the **Basic Build Instructions** was followed and produced no errors.
+
+Download and extract the [simulator](https://github.com/udacity/self-driving-car-sim/releases/tag/v1.0).
+
+1. Navigate to the extrated simulator directory and run the simulator.
+2. Select the settings best for your computer and click **ok**.
+3. In a terminal window run the MPC executable
+```
+./mpc
+```
