@@ -2,6 +2,10 @@ This code utilize a Model Predictive Controller (MPC) to steer and regulate the 
 
 This project involves the Udacity Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases/tag/v1.0)
 
+## Writeup
+
+The [writeup.md](writeup.md) contains details of the code and mathematicle derivations used in this project.
+
 ---
 
 ## Dependencies
