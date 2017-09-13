@@ -1,6 +1,6 @@
-This code utilize a Model Predictive Controller (MPC) to steer and regulate the velocity of a vehicle about a give path trajectory. A video of the filter in action can be found [here](https://youtu.be/t5-I2tkAX5E).
+This code utilize a Model Predictive Controller (MPC) to steer and regulate the velocity of a vehicle about a give path trajectory. A video of the filter in action can be seen below.
 
-This project involves the Udacity Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases/tag/v1.0)
+ [![MPC in action](image/video.png)](https://youtu.be/t5-I2tkAX5E)
 
 ## Writeup
 
@@ -8,7 +8,7 @@ The [writeup.md](writeup.md) contains details of the code and mathematicle deriv
 
 ---
 
-## Dependencies
+## Prerequisites
 
 * cmake >= 3.5
  * All OSes: [click here for installation instructions](https://cmake.org/install/)
@@ -39,9 +39,17 @@ The [writeup.md](writeup.md) contains details of the code and mathematicle deriv
     * Mac: `brew install cppad`
     * Linux `sudo apt-get install cppad` or equivalent.
 
+## Simulator
+
+This project involves the Udacity Term 2 Simulator which can be downloaded [here](https://github.com/udacity/self-driving-car-sim/releases/tag/v1.0)
+
 ## Basic Build Instructions
 
 1. Clone this repo.
+
+```sh
+$ git clone https://github.com/Heych88/udacity-sdcnd-MPC-Project.git
+```
 
 2. This repository includes two files that can be used to set up and intall [uWebSocketIO](https://github.com/uWebSockets/uWebSockets) for either Linux or Mac systems. For windows you can use either Docker, VMware, or even [Windows 10 Bash on Ubuntu](https://www.howtogeek.com/249966/how-to-install-and-use-the-linux-bash-shell-on-windows-10/) to install uWebSocketIO.
 
@@ -76,3 +84,20 @@ Download and extract the [simulator](https://github.com/udacity/self-driving-car
 ```
 ./mpc
 ```
+
+The car will now drive around the track and you should arrive at a result similar to the below.
+
+![Gazebo & RViz](image/startup image.png)
+
+
+## Contributing
+
+1. Fork it!
+2. Create your feature branch: `git checkout -b my-new-feature`
+3. Commit your changes: `git commit -am 'Add some feature'`
+4. Push to the branch: `git push origin my-new-feature`
+5. Submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
