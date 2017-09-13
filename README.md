@@ -87,7 +87,7 @@ Download and extract the [simulator](https://github.com/udacity/self-driving-car
 
 The car will now drive around the track and you should arrive at a result similar to the below.
 
-![Gazebo & RViz](image/startup image.png)
+![Gazebo & RViz](image/startupimage.png)
 
 
 ## Contributing
