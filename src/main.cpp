@@ -75,7 +75,7 @@ int main() {
 
   // MPC is initialized here!
   MPC mpc;
-  
+
   h.onMessage([&mpc](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -96,7 +96,7 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
-          
+
           // convert the trajectory coordinates from world frame into car frame
           // world frame angle (psi) is the inverse of car frame angle
           for(int i=0; i < ptsx.size(); i++) {
@@ -110,11 +110,11 @@ int main() {
           double *ptry = &ptsy[0];
           Eigen::Map<Eigen::VectorXd> pathx(ptrx, ptsx.size());
           Eigen::Map<Eigen::VectorXd> pathy(ptry, ptsy.size());
-          
+
           // fit a third order polynomial to the car framed trajectory points
           auto poly = polyfit(pathx, pathy, 3);
           /*
-          * TODO: Calculate steering angle and throttle using MPC.
+          * Calculate steering angle and throttle using MPC.
           *
           * Both are in between [-1, 1].
           *
@@ -122,19 +122,19 @@ int main() {
           double target_psi = 0;
           double target_x = 0;
           double target_y = 0;
-          
+
           double cte = polyeval(poly, target_x) - target_y;
-          // TODO: calculate the orientation error
+          // calculate the orientation error
           double epsi = target_psi - atan(poly[1] + 2 * poly[2] * target_x + 3 * poly[3] * target_x * target_x);
-          
+
           Eigen::VectorXd state(6);
           state << target_x, target_y, target_psi, v, cte, epsi;
-          
+
           vector<double> control;
           vector<double> path_x;
           vector<double> path_y;
           std::tie(control, path_x, path_y) = mpc.Solve(state, poly);
-          
+
           double steer_value= -control[0]; // steering is opposite in simulator control
           double throttle_value = control[1];
 
@@ -144,7 +144,7 @@ int main() {
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
-          //Display the MPC predicted trajectory 
+          //Display the MPC predicted trajectory
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
@@ -179,9 +179,6 @@ int main() {
           //
           // Feel free to play around with this value but should be to drive
           // around the track with 100ms latency.
-          //
-          // NOTE: REMEMBER TO SET THIS TO 100 MILLISECONDS BEFORE
-          // SUBMITTING.
           this_thread::sleep_for(chrono::milliseconds(100));
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
