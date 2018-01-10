@@ -2,9 +2,9 @@ This code utilize a Model Predictive Controller (MPC) to steer and regulate the 
 
  [![MPC in action](image/video.png)](https://youtu.be/t5-I2tkAX5E)
 
-## Writeup
+## Project website
 
-The [writeup.md](writeup.md) contains details of the code and mathematicle derivations used in this project.
+This repository has an accompanying project page, contains the theory and details behind the code. It can be found [here](https://www.haidynmcleod.com/model-predictive-controller).
 
 ---
 
