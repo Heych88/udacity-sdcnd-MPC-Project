@@ -149,9 +149,9 @@ Xc = Xt ∗ cos(​Θ) - Yt * sin(Θ)
 Yc = Xt ∗ sin(​Θ) + Yt * cos(Θ)
 ```
 
-`Xc` and `Yc` are the x and y coordinates in vehicle centric coordinates. `Xt` and `Yt` are the translation position of the car in the world reference frame and `Θ` is the angle of between the world coordinates *x*-axis and the car coordinates *x*-axis about the car world coordinates *z* axis, provided it is perpendicular to the car frames *x*-axis. This equation is implemented in between lines 102 and 107 in the `main.cpp` file.
+`Xc` and `Yc` are the x and y coordinates in vehicle centric coordinates. `Xt` and `Yt` are the translation position of the car in the world reference frame and `Θ` is the angle of between the world coordinates *x-axis* and the car coordinates *x-axis* about the world coordinates *z-axis*, provided it is perpendicular to the car frames *x-axis*. This equation is implemented in between lines 102 and 107 in the `main.cpp` file.
 
-Once the path trajectory points have been converted into vehicle centric coordinates, a line of best fit is calculated in the form of a quadratic equation. This equation is feed into the MPC for time stepped path prediction. The polynomial fitting is located on line 115 in the `main.cpp` file.e.
+Once the path trajectory points have been converted into vehicle centric coordinates, a line of best fit is calculated in the form of a quadratic equation. This equation is feed into the MPC for time stepped path prediction. The polynomial fitting is located on line 115 in the `main.cpp` file.
 
 #### 4. Describe how your Model Predictive Controller handles a 100-millisecond latency.
 

@@ -54,7 +54,7 @@ class FG_eval {
     // NOTE: The below function code is modified from the Udacity MPC quiz
     fg[0] = 0;
 
-    // penalise the system for deviating of the planned path and for not
+    // penalise the system for deviating off the planned path and for not
     // traveling at the intended speed
     for(int i=0; i < N; i++) {
       fg[0] += cte_penalty * CppAD::pow(vars[cte_start + i], 2);
@@ -84,7 +84,7 @@ class FG_eval {
     fg[1 + cte_start] = vars[cte_start];
     fg[1 + epsi_start] = vars[epsi_start];
 
-    // Update the system constrains using the systems model
+    // Update the system constraints using the systems model
     for (int i=0; i < N - 1; i++) {
       // get the future timestep values => t+1
       AD<double> x1 = vars[x_start + i + 1];
@@ -234,10 +234,6 @@ std::tuple<vector<double>, vector<double>, vector<double>> MPC::Solve(Eigen::Vec
   std::cout << "Cost " << cost << std::endl;
 
   // Return the first actuator values. The variables can be accessed with
-  // `solution.x[i]`.
-  //
-  // {...} is shorthand for creating a vector, so auto x1 = {1.0,2.0}
-  // creates a 2 element double vector.
   vector<double> control = {solution.x[delta_start], solution.x[a_start]};
   vector<double> path_x;
   vector<double> path_y;
